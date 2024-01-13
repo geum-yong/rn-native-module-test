@@ -7,7 +7,6 @@
 
 import React, {useCallback, useState} from 'react';
 import {
-  NativeModules,
   Pressable,
   SafeAreaView,
   StatusBar,
@@ -16,8 +15,17 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native';
+import {excuteCalcuator} from './NativeCalculatorUtils';
 
 import {Colors} from 'react-native/Libraries/NewAppScreen';
+
+export type TypeCalcAction =
+  | 'plus'
+  | 'minus'
+  | 'multiply'
+  | 'divide'
+  | 'clear'
+  | 'equal';
 
 function App(): React.JSX.Element {
   const isDarkMode = useColorScheme() === 'dark';
@@ -27,7 +35,10 @@ function App(): React.JSX.Element {
   const [resultNum, setResultNum] = useState('');
   const [inputNum, setInputNum] = useState('');
   const [tempNum, setTempNum] = useState(0);
-  const [lastAction, setLastAction] = useState<string | null>(null);
+  const [lastAction, setLastAction] = useState<Exclude<
+    TypeCalcAction,
+    'clear' | 'equal'
+  > | null>(null);
 
   const backgroundStyle = {
     backgroundColor: isDarkMode ? Colors.darker : Colors.lighter,
@@ -50,7 +61,7 @@ function App(): React.JSX.Element {
   );
 
   const onPressAction = useCallback(
-    async (action: string) => {
+    async (action: TypeCalcAction) => {
       console.log(action);
 
       if (action === 'clear') {
@@ -61,8 +72,8 @@ function App(): React.JSX.Element {
       }
 
       if (action === 'equal') {
-        if (tempNum !== 0) {
-          const result = await NativeModules.CalculatorModule.excuteCalc(
+        if (tempNum !== 0 && lastAction !== null) {
+          const result = await excuteCalcuator(
             lastAction,
             tempNum,
             parseInt(inputNum),
@@ -85,7 +96,7 @@ function App(): React.JSX.Element {
         setTempNum(parseInt(inputNum));
         setInputNum('');
       } else {
-        const result = await NativeModules.CalculatorModule.excuteCalc(
+        const result = await excuteCalcuator(
           action,
           tempNum,
           parseInt(inputNum),
@@ -156,7 +167,9 @@ function App(): React.JSX.Element {
                     justifyContent: 'center',
                     backgroundColor: 'gray',
                   }}
-                  onPress={() => onPressAction(action.action)}>
+                  onPress={() =>
+                    onPressAction(action.action as TypeCalcAction)
+                  }>
                   <Text style={{fontSize: 24}}>{action.label}</Text>
                 </Pressable>
               );
